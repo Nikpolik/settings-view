@@ -51,8 +51,8 @@ class PackageManager
       callback(code, outputLines.join('\n'), errorLines.join('\n'))
 
     args.push('--no-color')
-    new BufferedProcess({command, args, stdout, stderr, exit})
-
+    process = new BufferedProcess({command, args, stdout, stderr, exit})
+    @emitter.emit('process-output', pack, process.stdout)
   loadInstalled: (callback) ->
     args = ['ls', '--json']
     errorMessage = 'Fetching local packages failed.'
@@ -340,6 +340,7 @@ class PackageManager
 
     @emitPackageEvent('installing', pack)
     apmProcess = @runCommand(args, exit)
+
     handleProcessErrors(apmProcess, errorMessage, onError)
 
   uninstall: (pack, callback) ->
@@ -456,11 +457,12 @@ class PackageManager
   #
   # eventName - The event name suffix {String} of the event to emit.
   # pack - The package for which the event is being emitted.
+  # output - An output you want to emit with the event.
   # error - Any error information to be included in the case of an error.
-  emitPackageEvent: (eventName, pack, error) ->
+  emitPackageEvent: (eventName, pack, output, error) ->
     theme = pack.theme ? pack.metadata?.theme
     eventName = if theme then "theme-#{eventName}" else "package-#{eventName}"
-    @emitter.emit(eventName, {pack, error})
+    @emitter.emit(eventName, {pack, output, error})
 
   on: (selectors, callback) ->
     subscriptions = new CompositeDisposable
